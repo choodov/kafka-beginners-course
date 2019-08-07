@@ -19,6 +19,7 @@ public class ConsumerDemo {
     private static final String OFFSET_CONFIG = "earliest"; // earliest (from start of topic)/ latest (new messages) / none
     private static final String FIRST_TOPIC_NAME = "first_topic";
 
+    // RUN SEVERAL TIMES to see work of consumers in a group
     public static void main(String[] args) {
 
         Logger logger = LoggerFactory.getLogger(ConsumerDemo.class);
