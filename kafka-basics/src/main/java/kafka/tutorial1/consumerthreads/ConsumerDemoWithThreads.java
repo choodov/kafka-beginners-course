@@ -1,4 +1,4 @@
-package com.chudov.examples.kafka.tutorial1.consumerthreads;
+package kafka.tutorial1.consumerthreads;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

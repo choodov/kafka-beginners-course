@@ -1,4 +1,4 @@
-package com.chudov.examples.kafka.tutorial1.consumerthreads;
+package kafka.tutorial1.consumerthreads;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;

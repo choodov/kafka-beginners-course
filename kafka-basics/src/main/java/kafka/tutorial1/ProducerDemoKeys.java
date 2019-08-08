@@ -1,15 +1,18 @@
-package com.chudov.examples.kafka.tutorial1;
+package kafka.tutorial1;
 
-import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 
-public class ProducerDemoWithCallback {
+public class ProducerDemoKeys {
 
-    private static Logger log = LoggerFactory.getLogger(ProducerDemoWithCallback.class);
+    private static Logger log = LoggerFactory.getLogger(ProducerDemoKeys.class);
 
     private static final String DEFAULT_BOOTSTRAP_SERVER = "127.0.0.1:9092";
     public static final String FIRST_TOPIC_NAME = "first_topic";
@@ -26,15 +29,21 @@ public class ProducerDemoWithCallback {
         // create producer
         KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
 
-        // create a producer record
-        ProducerRecord<String, String> record =
-                new ProducerRecord<String, String>(FIRST_TOPIC_NAME, "first record from producer");
+        for (int i = 0; i <10; i++) {
+            // create a producer record
+            String value = "new value " + i;
+            // message with same key always goes to same partition!
+            String key = "id_" + i;
 
-        // send data - asynchronous. With CALLBACK
-        producer.send(record, ProducerDemoWithCallback::checkCallback);
+            ProducerRecord<String, String> record =
+                    new ProducerRecord<>(FIRST_TOPIC_NAME, key, value);
 
-        // flush data
-        producer.flush();
+            // send data - asynchronous. With CALLBACK
+            producer.send(record, ProducerDemoKeys::checkCallback);
+
+            // flush data
+            producer.flush();
+        }
         // flush and close producer
         producer.close();
     }
