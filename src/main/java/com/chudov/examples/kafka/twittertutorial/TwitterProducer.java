@@ -45,7 +45,7 @@ public class TwitterProducer {
 
     private void run() {
         // Set up your blocking queues: Be sure to size these properly based on expected TPS of your stream
-        BlockingQueue<String> msgQueue = new LinkedBlockingQueue<String>(1000);
+        BlockingQueue<String> msgQueue = new LinkedBlockingQueue<>(1000);
 
         // create a twitter client
         Client client = createTwitterClient(msgQueue);
@@ -83,6 +83,13 @@ public class TwitterProducer {
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, DEFAULT_BOOTSTRAP_SERVER);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
+        //create safe Producer
+        properties.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
+        properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
+        properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
+        // if version >= 1.1 can keep 5. Use 1 otherwise
+        properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5");
 
         return new KafkaProducer<>(properties);
     }
