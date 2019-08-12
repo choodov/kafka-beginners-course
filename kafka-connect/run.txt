@@ -1,0 +1,2 @@
+cd ...\kafkabeginner\kafka-connect\
+connect-standalone.bat connect-standalone.properties twitter.properties
