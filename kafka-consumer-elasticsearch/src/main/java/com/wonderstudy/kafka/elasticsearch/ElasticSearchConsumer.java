@@ -46,6 +46,8 @@ public class ElasticSearchConsumer {
 
         while (true) {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
+
+            logger.info("Received " + records.count() + "records");
             for (ConsumerRecord<String, String> record : records) {
 
                 // 2 strategies for idempotent id generation:
@@ -60,6 +62,16 @@ public class ElasticSearchConsumer {
 
                 IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
                 logger.info("Id: " + indexResponse.getId());
+
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                logger.info("Committing offsets");
+                consumer.commitAsync();
+                logger.info("Offsets have been committed");
             }
         }
 //        client.close();
@@ -98,6 +110,8 @@ public class ElasticSearchConsumer {
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, GROUP_ID);
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, OFFSET_CONFIG);
+        properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false"); // disable auto commit of offsets
+        properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "10");
 
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(properties);
         consumer.subscribe(Collections.singleton(TOPIC_NAME));
