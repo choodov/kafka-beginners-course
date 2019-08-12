@@ -1,5 +1,6 @@
 package com.wonderstudy.kafka.elasticsearch;
 
+import com.google.gson.JsonParser;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -29,11 +30,13 @@ import java.util.Properties;
 public class ElasticSearchConsumer {
 
     private static Logger logger = LoggerFactory.getLogger(ElasticSearchConsumer.class);
+    private static JsonParser jsonParser = new JsonParser();
 
     private static final String DEFAULT_BOOTSTRAP_SERVER = "127.0.0.1:9092";
     private static final String GROUP_ID = "kafka_elasticsearch";
     private static final String OFFSET_CONFIG = "earliest"; // earliest (from start of topic)/ latest (new messages) / none
     private static final String TOPIC_NAME = "twitter_tweets";
+    private static final String ID_STR = "id_str";
 
     public static void main(String[] args) throws IOException {
         RestHighLevelClient client = createClient();
@@ -44,17 +47,28 @@ public class ElasticSearchConsumer {
         while (true) {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
             for (ConsumerRecord<String, String> record : records) {
+
+                // 2 strategies for idempotent id generation:
+                // 1) kafka generic ID
+                // String id = record.topic() + "_" + record.partition() + "_" + record.offset();
+                // 2) twitter feed specific id
+                String id = extractIdFromTweet(record.value());
+
                 // insert data to ES
-                IndexRequest indexRequest = new IndexRequest("twitter", "tweets").source(record.value(), XContentType.JSON);
+                IndexRequest indexRequest = new IndexRequest("twitter", "tweets", id) // id - make consumer idempotent
+                        .source(record.value(), XContentType.JSON);
 
                 IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
-                String id = indexResponse.getId();
-                logger.info("Id: " + id);
+                logger.info("Id: " + indexResponse.getId());
             }
         }
 //        client.close();
 
         // To see json in ES: GET /twitter/tweets/<id>
+    }
+
+    private static String extractIdFromTweet(final String tweetJson) {
+        return jsonParser.parse(tweetJson).getAsJsonObject().get(ID_STR).getAsString();
     }
 
     private static RestHighLevelClient createClient() {
