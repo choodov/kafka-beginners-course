@@ -12,8 +12,9 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -46,28 +47,30 @@ public class ElasticSearchConsumer {
 
         while (true) {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
+            int recordCount = records.count();
 
-            logger.info("Received " + records.count() + "records");
+            logger.info("Received " + recordCount + "records");
+            BulkRequest bulkRequest = new BulkRequest();
+
             for (ConsumerRecord<String, String> record : records) {
-
                 // 2 strategies for idempotent id generation:
                 // 1) kafka generic ID
                 // String id = record.topic() + "_" + record.partition() + "_" + record.offset();
                 // 2) twitter feed specific id
-                String id = extractIdFromTweet(record.value());
-
-                // insert data to ES
-                IndexRequest indexRequest = new IndexRequest("twitter", "tweets", id) // id - make consumer idempotent
-                        .source(record.value(), XContentType.JSON);
-
-                IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
-                logger.info("Id: " + indexResponse.getId());
-
                 try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    String id = extractIdFromTweet(record.value());
+
+                    // insert data to ES
+                    IndexRequest indexRequest = new IndexRequest("twitter", "tweets", id) // id - make consumer idempotent
+                            .source(record.value(), XContentType.JSON);
+                    bulkRequest.add(indexRequest);
+                } catch (NullPointerException e) {
+                    logger.warn("Skipping bad data: " + record.value());
                 }
+            }
+
+            if (recordCount > 0) {
+                BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
 
                 logger.info("Committing offsets");
                 consumer.commitAsync();
