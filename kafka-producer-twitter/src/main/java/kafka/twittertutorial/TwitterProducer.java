@@ -111,7 +111,7 @@ public class TwitterProducer {
         Hosts hosebirdHosts = new HttpHosts(Constants.STREAM_HOST);
         StatusesFilterEndpoint hosebirdEndpoint = new StatusesFilterEndpoint();
 
-        List<String> terms = Lists.newArrayList("elonmusk", "kafka");
+        List<String> terms = Lists.newArrayList("elonmusk", "kafka", "spacex", "tesla");
         hosebirdEndpoint.trackTerms(terms);
 
         // These secrets should be read from a config file
